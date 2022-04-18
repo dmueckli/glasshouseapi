@@ -9,16 +9,18 @@ class WeatherData
 
     private $_id;
     private $_hostId;
+    private $_hostname;
     private $_humidity;
     private $_soilMoisture;
     private $_temperature;
     private $_heatIndex;
     private $_time;
 
-    public function __construct($id, $hostId, $humidity, $soilMoisture, $temperature, $heatIndex, $time)
+    public function __construct($id, /*$hostId,*/  /*$hostname,*/ $humidity, $soilMoisture, $temperature, $heatIndex, $time)
     {
         $this->setID($id);
-        $this->setHostId($hostId);
+        /*$this->setHostId($hostId);*/
+        // $this->setHostname($hostname);
         $this->setHumidity($humidity);
         $this->setSoilMoisture($soilMoisture);
         $this->setTemperature($temperature);
@@ -31,10 +33,15 @@ class WeatherData
         return $this->_id;
     }
 
-    public function getHostId()
-    {
-        return $this->_hostId;
-    }
+    // public function getHostId()
+    // {
+    //     return $this->_hostId;
+    // }
+
+    // public function getHostname()
+    // {
+    //     return $this->_hostname;
+    // }
 
     public function getHumidity()
     {
@@ -71,14 +78,23 @@ class WeatherData
         $this->_id = $id;
     }
 
-    public function setHostId($hostId)
-    {
-        if (($hostId !== null) && (!is_numeric($hostId) || $hostId <= 0 || $hostId > 9223372036854775807 || $this->_hostId !== null)) {
-            throw new WeatherDataException('Error setting Host ID.');
-        }
+    // public function setHostId($hostId)
+    // {
+    //     if (($hostId !== null) && (!is_numeric($hostId) || $hostId <= 0 || $hostId > 9223372036854775807 || $this->_hostId !== null)) {
+    //         throw new WeatherDataException('Error setting Host ID.');
+    //     }
 
-        $this->_hostId = $hostId;
-    }
+    //     $this->_hostId = $hostId;
+    // }
+
+    // public function setHostname($hostname)
+    // {
+    //     if (strlen($hostname) < 0 || strlen($hostname) > 255) {
+    //         throw new WeatherDataException('Task Title error.');
+    //     }
+
+    //     $this->_hostname = $hostname;
+    // }
 
     public function setHumidity($humidity)
     {
@@ -116,7 +132,8 @@ class WeatherData
         $this->_heatIndex = $heatIndex;
     }
 
-    public function setTime($time) {
+    public function setTime($time)
+    {
         $this->_time = $time;
     }
 
@@ -124,7 +141,7 @@ class WeatherData
     {
         $weatherData = array();
         $weatherData['id'] = $this->getID();
-        $weatherData['host id'] = $this->getHostId();
+        //$weatherData['hostname'] = $this->getHostname();
         $weatherData['humidity'] = $this->getHumidity();
         $weatherData['soil moisture'] = $this->getSoilMoisture();
         $weatherData['temperature'] = $this->getTemperature();
