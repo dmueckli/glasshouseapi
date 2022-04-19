@@ -157,7 +157,7 @@ if (array_key_exists('weatherDataId', $_GET)) {
             // create db query
             // $query = $writeDB->prepare('INSERT INTO tbltasks (title, description, deadline, completed, userid) VALUES (:title, :description, STR_TO_DATE(:deadline, "%d/%m/%Y %H:%i"), :completed, :userid)');
 
-            $query = $writeDB->prepare('INSERT INTO tbl_weatherdata (id, host_id, humidity, soil_moisture, temperature, heat_index, time) VALUES (NULL, :hostId, :humidity, :soil_moisture, :temperature, :heatIndex, current_timestamp())');
+            $query = $writeDB->prepare('INSERT INTO tbl_weatherdata (id, host_id, humidity, soil_moisture, temperature, heat_index, time) VALUES (NULL, :hostId, :humidity, :soil_moisture, :temperature, :heatIndex, now())');
 
             $query->bindParam(':hostId', $hostId, PDO::PARAM_INT);
             $query->bindParam(':humidity', $humidity, PDO::PARAM_STR);
