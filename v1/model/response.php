@@ -79,6 +79,6 @@ class Response
             }
         }
 
-        echo json_encode($this->_responseData);
+        echo json_encode($this->_responseData, JSON_PRETTY_PRINT);
     }
 }
