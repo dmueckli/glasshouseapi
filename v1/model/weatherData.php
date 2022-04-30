@@ -8,8 +8,8 @@ class WeatherData
 {
 
     private $_id;
-    private $_hostId;
-    private $_hostname;
+    // private $_hostId;
+    // private $_hostname;
     private $_humidity;
     private $_soilMoisture;
     private $_temperature;
