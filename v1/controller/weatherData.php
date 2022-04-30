@@ -85,7 +85,7 @@ if (array_key_exists('weatherDataId', $_GET)) {
         exit;
     }
 } elseif (empty($_GET)) {
-    // POST data to the 
+    // POST data to the Server
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             //code...
@@ -111,17 +111,19 @@ if (array_key_exists('weatherDataId', $_GET)) {
 
                 $response = new Response(false, 400, null, null, false);
 
-                (!isset($jsonData['host']['id']) ? $response->addMessage('Host ID field is mandatory and must be provided.') : false);
+                /* WILL BE SET DURING AUTHORIZATION!!!
+                // (!isset($jsonData['host']['id']) ? $response->addMessage('Host ID field is mandatory and must be provided.') : false);
 
-                (!isset($jsonData['host']['name']) ? $response->addMessage('Host name field is mandatory and must be provided.') : false);
+                // (!isset($jsonData['host']['name']) ? $response->addMessage('Host name field is mandatory and must be provided.') : false);
 
-                (!isset($jsonData['host']['version']) ? $response->addMessage('Version field is mandatory and must be provided.') : false);
+                // (!isset($jsonData['host']['version']) ? $response->addMessage('Version field is mandatory and must be provided.') : false);
 
-                (!isset($jsonData['host']['local ip']) ? $response->addMessage('Local IP field is mandatory and must be provided.') : false);
+                // (!isset($jsonData['host']['local ip']) ? $response->addMessage('Local IP field is mandatory and must be provided.') : false);
 
-                (!isset($jsonData['host']['gateway ip']) ? $response->addMessage('Gateway IP field is mandatory and must be provided.') : false);
+                // (!isset($jsonData['host']['gateway ip']) ? $response->addMessage('Gateway IP field is mandatory and must be provided.') : false);
 
-                (!isset($jsonData['host']['mac']) ? $response->addMessage('Mac Address field is mandatory and must be provided.') : false);
+                // (!isset($jsonData['host']['mac']) ? $response->addMessage('Mac Address field is mandatory and must be provided.') : false);
+                */
 
                 (!isset($jsonData['sensor data']['humidity']) ? $response->addMessage('Humidity  field is mandatory and must be provided.') : false);
 
