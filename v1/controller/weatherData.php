@@ -111,20 +111,21 @@ if (array_key_exists('weatherDataId', $_GET)) {
 
                 $response = new Response(false, 400, null, null, false);
 
-                /* WILL BE SET DURING AUTHORIZATION!!!
-                // (!isset($jsonData['host']['id']) ? $response->addMessage('Host ID field is mandatory and must be provided.') : false);
+                /* WILL BE SET DURING AUTHORIZATION!!! */
+                (!isset($jsonData['host']['id']) ? $response->addMessage('Host ID field is mandatory and must be provided.') : false);
 
-                // (!isset($jsonData['host']['name']) ? $response->addMessage('Host name field is mandatory and must be provided.') : false);
+                (!isset($jsonData['host']['name']) ? $response->addMessage('Host name field is mandatory and must be provided.') : false);
 
-                // (!isset($jsonData['host']['version']) ? $response->addMessage('Version field is mandatory and must be provided.') : false);
+                (!isset($jsonData['host']['version']) ? $response->addMessage('Version field is mandatory and must be provided.') : false);
 
-                // (!isset($jsonData['host']['local ip']) ? $response->addMessage('Local IP field is mandatory and must be provided.') : false);
+                (!isset($jsonData['host']['local ip']) ? $response->addMessage('Local IP field is mandatory and must be provided.') : false);
 
                 (!isset($jsonData['host']['gateway ip']) ? $response->addMessage('Gateway IP field is mandatory and must be provided.') : false);
 
-                // (!isset($jsonData['host']['mac']) ? $response->addMessage('Mac Address field is mandatory and must be provided.') : false);
-                */
+                (!isset($jsonData['host']['mac']) ? $response->addMessage('Mac Address field is mandatory and must be provided.') : false);
 
+                /**/
+                
                 (!isset($jsonData['sensor data']['humidity']) ? $response->addMessage('Humidity  field is mandatory and must be provided.') : false);
 
                 (!isset($jsonData['sensor data']['soil moisture']) ? $response->addMessage('Soil moisture field is mandatory and must be provided.') : false);
@@ -216,7 +217,7 @@ if (array_key_exists('weatherDataId', $_GET)) {
             $returnData['weatherData'] = $weatherDataArray;
 
             //set up response for successful return
-            $response = new Response(true, 200, 'Query OK! Data created. weatherDataId: '.$lastId, $returnData, true);
+            $response = new Response(true, 200, 'Query OK! Data created. weatherDataId: ' . $lastId, $returnData, true);
             $response->send();
             exit;
         } catch (WeatherDataException $wx) {
