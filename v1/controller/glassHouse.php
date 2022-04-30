@@ -2,7 +2,7 @@
 
 require_once('db.php');
 require_once('../model/response.php');
-require_once('../model/weatherData.php');
+require_once('../model/glassHouse.php');
 require_once('../model/host.php');
 
 try {
@@ -17,6 +17,25 @@ try {
     exit();
 }
 
+// TODO: Add authorization script
+
+// Begin of the authorization script
+/*
+// Check for authorization header 
+if (!isset($_SERVER['HTTP_AUTHORIZATION']) || strlen($_SERVER['HTTP_AUTHORIZATION']) < 1) {
+    $response = new Response();
+    $response->setHttpStatusCode(401);
+    $response->setSuccess(false);
+    (!isset($_SERVER['HTTP_AUTHORIZATION']) ? $response->addMessage('Access token is missing from the header.') : false);
+    (strlen($_SERVER['HTTP_AUTHORIZATION']) < 1 ? $response->addMessage('Access token cannot be blank.') : false);
+    $response->send();
+    exit();
+}
+*/
+
+
+// End of the authorization script
+
 if (array_key_exists('weatherDataId', $_GET)) {
     $weatherDataId = $_GET['weatherDataId'];
 
@@ -30,7 +49,6 @@ if (array_key_exists('weatherDataId', $_GET)) {
 
         try {
             //code...
-            // $query = $readDB->prepare('SELECT id, name, humidity, soil_moisture, temperature, heat_index, time FROM tbl_weatherdata, tbl_hosts WHERE tbl_weatherdata.id = :id AND tbl_hosts = host_id');
             $query = $readDB->prepare('SELECT tbl_weatherdata.id, tbl_hosts.id AS hostid, tbl_hosts.name, tbl_hosts.version, tbl_hosts.mac, INET_NTOA(tbl_hosts.local_ip) AS local_ip, INET_NTOA(tbl_hosts.gateway_ip) AS gateway_ip, tbl_weatherdata.humidity, tbl_weatherdata.soil_moisture, tbl_weatherdata.temperature, tbl_weatherdata.heat_index, tbl_weatherdata.time FROM tbl_weatherdata INNER JOIN tbl_hosts ON tbl_weatherdata.host_id = tbl_hosts.id WHERE tbl_weatherdata.id = :id');
             $query->bindParam(':id', $weatherDataId, PDO::PARAM_INT);
             $query->execute();
@@ -85,7 +103,7 @@ if (array_key_exists('weatherDataId', $_GET)) {
         exit;
     }
 } elseif (empty($_GET)) {
-    // POST data to the 
+    // POST data to the Server
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             //code...
@@ -107,21 +125,23 @@ if (array_key_exists('weatherDataId', $_GET)) {
             }
 
             // check if post request contains mandatory fields
-            if (!isset($jsonData['host']['id']) || !isset($jsonData['host']['name']) || !isset($jsonData['host']['version']) || !isset($jsonData['host']['local ip']) || !isset($jsonData['host']['gateway ip']) || !isset($jsonData['host']['mac']) || !isset($jsonData['sensor data']['humidity']) || !isset($jsonData['sensor data']['soil moisture']) || !isset($jsonData['sensor data']['temperature °C']) || !isset($jsonData['sensor data']['heat index °C'])) {
+            if (!isset($jsonData['sensor data']['humidity']) || !isset($jsonData['sensor data']['soil moisture']) || !isset($jsonData['sensor data']['temperature °C']) || !isset($jsonData['sensor data']['heat index °C'])) {
 
                 $response = new Response(false, 400, null, null, false);
 
-                (!isset($jsonData['host']['id']) ? $response->addMessage('Host ID field is mandatory and must be provided.') : false);
+                /* WILL BE SET DURING AUTHORIZATION!!!
+                // (!isset($jsonData['host']['id']) ? $response->addMessage('Host ID field is mandatory and must be provided.') : false);
 
-                (!isset($jsonData['host']['name']) ? $response->addMessage('Host name field is mandatory and must be provided.') : false);
+                // (!isset($jsonData['host']['name']) ? $response->addMessage('Host name field is mandatory and must be provided.') : false);
 
-                (!isset($jsonData['host']['version']) ? $response->addMessage('Version field is mandatory and must be provided.') : false);
+                // (!isset($jsonData['host']['version']) ? $response->addMessage('Version field is mandatory and must be provided.') : false);
 
-                (!isset($jsonData['host']['local ip']) ? $response->addMessage('Local IP field is mandatory and must be provided.') : false);
+                // (!isset($jsonData['host']['local ip']) ? $response->addMessage('Local IP field is mandatory and must be provided.') : false);
 
-                (!isset($jsonData['host']['gateway ip']) ? $response->addMessage('Gateway IP field is mandatory and must be provided.') : false);
+                // (!isset($jsonData['host']['gateway ip']) ? $response->addMessage('Gateway IP field is mandatory and must be provided.') : false);
 
-                (!isset($jsonData['host']['mac']) ? $response->addMessage('Mac Address field is mandatory and must be provided.') : false);
+                // (!isset($jsonData['host']['mac']) ? $response->addMessage('Mac Address field is mandatory and must be provided.') : false);
+                */
 
                 (!isset($jsonData['sensor data']['humidity']) ? $response->addMessage('Humidity  field is mandatory and must be provided.') : false);
 
@@ -129,7 +149,7 @@ if (array_key_exists('weatherDataId', $_GET)) {
 
                 (!isset($jsonData['sensor data']['temperature °C']) ? $response->addMessage('Temperature field is mandatory and must be provided.') : false);
 
-                (!isset($jsonData['sensor data']['heat index °C']) ? $response->addMessage('Temperature field is mandatory and must be provided.') : false);
+                (!isset($jsonData['sensor data']['heat index °C']) ? $response->addMessage('Heat index field is mandatory and must be provided.') : false);
 
                 $response->send();
                 exit;
