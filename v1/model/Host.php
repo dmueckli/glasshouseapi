@@ -14,14 +14,14 @@ class Host
     private $_localip;
     private $_gatewayip;
 
-    public function __construct($id, $hostname, $version, $mac, $localip, $gatewayip)
+    public function __construct($id, $hostname, $version, $gatewayip, $localip, $mac)
     {
         $this->setID($id);
         $this->setHostname($hostname);
         $this->setVersion($version);
-        $this->setMac($mac);
-        $this->setLocalIp($localip);
         $this->setGatewayIp($gatewayip);
+        $this->setLocalIp($localip);
+        $this->setMac($mac);
         
     }
 
@@ -40,9 +40,9 @@ class Host
         return $this->_version;
     }
 
-    public function getMac()
+    public function getGatewayIp()
     {
-        return $this->_mac;
+        return $this->_gatewayip;
     }
 
     public function getLocalIp()
@@ -50,11 +50,10 @@ class Host
         return $this->_localip;
     }
 
-    public function getGatewayIp()
+    public function getMac()
     {
-        return $this->_gatewayip;
+        return $this->_mac;
     }
-
 
     // Setters
     public function setID($id)
@@ -84,13 +83,13 @@ class Host
         $this->_version = $version;
     }
 
-    public function setMac($mac)
+    public function setGatewayIp($ip)
     {
-        if (strlen($mac) < 0 || strlen($mac) > 17) {
-            throw new HostException('Error setting Host mac address.');
-        }
+        // if (($ip !== null) && (!is_numeric($ip) || $ip <= 0 || $ip > 9223372036854775807 || $this->_gatewayip !== null)) {
+        //     throw new HostException('Error setting Hosts local IP.');
+        // }
 
-        $this->_mac = $mac;
+        $this->_gatewayip = $ip;
     }
 
     public function setLocalIp($ip)
@@ -102,13 +101,13 @@ class Host
         $this->_localip = $ip;
     }
 
-    public function setGatewayIp($ip)
+    public function setMac($mac)
     {
-        // if (($ip !== null) && (!is_numeric($ip) || $ip <= 0 || $ip > 9223372036854775807 || $this->_gatewayip !== null)) {
-        //     throw new HostException('Error setting Hosts local IP.');
-        // }
+        if (strlen($mac) < 0 || strlen($mac) > 17) {
+            throw new HostException('Error setting Host mac address.');
+        }
 
-        $this->_gatewayip = $ip;
+        $this->_mac = $mac;
     }
 
     public function returnAsArray()
@@ -117,9 +116,9 @@ class Host
         $weatherData['id'] = $this->getID();
         $weatherData['hostname'] = $this->getHostname();
         $weatherData['version'] = $this->getVersion();
-        $weatherData['mac'] = $this->getMac();
-        $weatherData['local ip'] = $this->getLocalIp();
         $weatherData['gateway ip'] = $this->getGatewayIp();
+        $weatherData['local ip'] = $this->getLocalIp();
+        $weatherData['mac'] = $this->getMac();
         return $weatherData;
     }
 }

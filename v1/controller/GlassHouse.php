@@ -1,9 +1,9 @@
 <?php
 
 require_once('db.php');
-require_once('../model/response.php');
-require_once('../model/weatherData.php');
-require_once('../model/host.php');
+require_once('../model/Response.php');
+require_once('../model/GlassHouse.php');
+require_once('../model/Host.php');
 
 try {
     //code...
@@ -16,6 +16,21 @@ try {
     $response->send();
     exit();
 }
+
+/*  TODO: Implement authorization script
+    Begin of the authorization script
+
+// Check for authorization header 
+if (!isset($_SERVER['HTTP_AUTHORIZATION']) || strlen($_SERVER['HTTP_AUTHORIZATION']) < 1) {
+    $response = new Response();
+    $response->setHttpStatusCode(401);
+    $response->setSuccess(false);
+    (!isset($_SERVER['HTTP_AUTHORIZATION']) ? $response->addMessage('Access token is missing from the header.') : false);
+    (strlen($_SERVER['HTTP_AUTHORIZATION']) < 1 ? $response->addMessage('Access token cannot be blank.') : false);
+    $response->send();
+    exit();
+}
+ */
 
 if (array_key_exists('weatherDataId', $_GET)) {
     $weatherDataId = $_GET['weatherDataId'];
@@ -107,7 +122,7 @@ if (array_key_exists('weatherDataId', $_GET)) {
             }
 
             // check if post request contains mandatory fields
-            if (!isset($jsonData['host']['id']) || !isset($jsonData['host']['name']) || !isset($jsonData['host']['version']) || !isset($jsonData['host']['local ip']) || !isset($jsonData['host']['gateway ip']) || !isset($jsonData['host']['mac']) || !isset($jsonData['sensor data']['humidity']) || !isset($jsonData['sensor data']['soil moisture']) || !isset($jsonData['sensor data']['temperature °C']) || !isset($jsonData['sensor data']['heat index °C'])) {
+            if (!isset($jsonData['sensor data']['humidity']) || !isset($jsonData['sensor data']['soil moisture']) || !isset($jsonData['sensor data']['temperature °C']) || !isset($jsonData['sensor data']['heat index °C'])) {
 
                 $response = new Response(false, 400, null, null, false);
 
@@ -138,7 +153,7 @@ if (array_key_exists('weatherDataId', $_GET)) {
             }
 
             // create new task with data, if non mandatory fields not provided then set to null
-            $weatherdata = array();
+            // $weatherdata = array();
 
             $weather = new WeatherData(null, $jsonData['sensor data']['humidity'], $jsonData['sensor data']['soil moisture'], $jsonData['sensor data']['temperature °C'], $jsonData['sensor data']['heat index °C'], null);
 
@@ -216,7 +231,7 @@ if (array_key_exists('weatherDataId', $_GET)) {
             $returnData['weatherData'] = $weatherDataArray;
 
             //set up response for successful return
-            $response = new Response(true, 200, 'Query OK! Data created. weatherDataId: '.$lastId, $returnData, true);
+            $response = new Response(true, 200, 'Query OK! Data created. weatherDataId: ' . $lastId, $returnData, true);
             $response->send();
             exit;
         } catch (WeatherDataException $wx) {
@@ -230,6 +245,11 @@ if (array_key_exists('weatherDataId', $_GET)) {
             $response->send();
             exit();
         }
+    } else {
+        # code...
+        $response = new Response(false, 405, 'Not allowed!', null, false);
+        $response->send();
+        exit;
     }
 } else {
     # code...
