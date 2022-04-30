@@ -138,15 +138,8 @@ if (array_key_exists('weatherDataId', $_GET)) {
                 exit;
             }
 
-            // create new task with data, if non mandatory fields not provided then set to null
-            $weatherdata = array();
-
-            $weather = new WeatherData(null, $jsonData['sensor data']['humidity'], $jsonData['sensor data']['soil moisture'], $jsonData['sensor data']['temperature °C'], $jsonData['sensor data']['heat index °C'], null);
-
-            $humidity = $weather->getHumidity();
-            $soilMoisture = $weather->getSoilMoisture();
-            $tempCelsius = $weather->getTemperature();
-            $heatIndex = $weather->getHeatIndex();
+            // create new array with data, if non mandatory fields not provided then set to null
+            // $weatherdata = array();
 
             $host = new Host($jsonData['host']['id'], $jsonData['host']['name'], $jsonData['host']['version'], $jsonData['host']['mac'], $jsonData['host']['local ip'], $jsonData['host']['gateway ip']);
 
@@ -156,6 +149,14 @@ if (array_key_exists('weatherDataId', $_GET)) {
             $mac = $host->getMac();
             $localIp = $host->getLocalIp();
             $gatewayIp = $host->getGatewayIp();
+
+            $weather = new WeatherData(null, $jsonData['sensor data']['humidity'], $jsonData['sensor data']['soil moisture'], $jsonData['sensor data']['temperature °C'], $jsonData['sensor data']['heat index °C'], null);
+
+            $humidity = $weather->getHumidity();
+            $soilMoisture = $weather->getSoilMoisture();
+            $tempCelsius = $weather->getTemperature();
+            $heatIndex = $weather->getHeatIndex();
+
 
             // create db query
             // $query = $writeDB->prepare('INSERT INTO tbltasks (title, description, deadline, completed, userid) VALUES (:title, :description, STR_TO_DATE(:deadline, "%d/%m/%Y %H:%i"), :completed, :userid)');
