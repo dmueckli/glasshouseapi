@@ -116,8 +116,8 @@ class Host
         $weatherData['id'] = $this->getID();
         $weatherData['hostname'] = $this->getHostname();
         $weatherData['version'] = $this->getVersion();
-        $weatherData['gateway ip'] = $this->getGatewayIp();
-        $weatherData['local ip'] = $this->getLocalIp();
+        $weatherData['gateway_ip'] = $this->getGatewayIp();
+        $weatherData['local_ip'] = $this->getLocalIp();
         $weatherData['mac'] = $this->getMac();
         return $weatherData;
     }

@@ -67,13 +67,179 @@ if (array_key_exists('hostId', $_GET)) {
             exit();
         }
     } elseif ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
-        $response = new Response(false, 405, 'Request method is not implemented!', null, false);
+        $response = new Response(false, 501, 'Request method is not implemented!', null, false);
         $response->send();
         exit;
     } elseif ($_SERVER['REQUEST_METHOD'] === 'PATCH') {
-        $response = new Response(false, 405, 'Request method is not implemented!', null, false);
-        $response->send();
-        exit;
+        try {
+
+            if ($_SERVER['CONTENT_TYPE'] !== 'application/json') {
+                $response = new Response(false, 400, 'Content Type header not set to JSON.');
+                $response->send();
+                exit();
+            }
+
+            $rawPatchData = file_get_contents('php://input');
+
+            if (!$jsonData = json_decode($rawPatchData)) {
+                $response = new Response(false, 400, 'Request body is not valid JSON.');
+                $response->send();
+                exit();
+            }
+
+            // Checking for updated fields and set the query string accordingly.
+            $hostname_updated = false;
+            $version_updated = false;
+            $gatewayip_updated = false;
+            $localip_updated = false;
+            $mac_updated = false;
+
+            $queryFields = '';
+
+            if (isset($jsonData->host->name)) {
+                $hostname_updated = true;
+
+                $queryFields .= 'name = :name, ';
+            }
+
+            if (isset($jsonData->host->version)) {
+                $version_updated = true;
+                $queryFields .= 'version = :version, ';
+            }
+
+            if (isset($jsonData->host->mac)) {
+                $mac_updated = true;
+                $queryFields .= 'mac = :mac, ';
+            }
+
+            if (isset($jsonData->host->local_ip)) {
+                $localip_updated = true;
+                $queryFields .= 'local_ip = INET_ATON(:local_ip), ';
+            }
+
+            if (isset($jsonData->host->gateway_ip)) {
+                $gatewayip_updated = true;
+                $queryFields .= 'gateway_ip = INET_ATON(:gateway_ip), ';
+            }
+
+            // This strips the last comma from the end of the queryFields string.
+            $queryFields = rtrim($queryFields, ', ');
+
+            if ($hostname_updated === false && $version_updated === false && $gatewayip_updated === false && $localip_updated === false && $mac_updated === false) {
+                $response = new Response(false, 400, 'No fields provided to update.', null, false);
+                $response->send();
+                exit();
+            }
+
+            $query = $writeDB->prepare('SELECT id, name, version, mac, INET_NTOA(local_ip) AS local_ip, INET_NTOA(gateway_ip) AS gateway_ip FROM tbl_hosts WHERE id = :hostid');
+            $query->bindParam(':hostid', $hostId, PDO::PARAM_INT);
+            $query->execute();
+
+            $rowCount = $query->rowCount();
+
+            if ($rowCount === 0) {
+                $response = new Response(false, 404, 'No host found to update.');
+                $response->send();
+                exit();
+            }
+
+            while ($row = $query->fetch(PDO::FETCH_ASSOC)) {
+                $host = new Host($row['id'], $row['name'], $row['version'], $row['gateway_ip'], $row['local_ip'], $row['mac']);
+            }
+
+            $queryString = 'UPDATE tbl_hosts SET ' . $queryFields . ' WHERE id = :hostid';
+
+            $query = $writeDB->prepare($queryString);
+
+            if ($hostname_updated === true) {
+                $host->setHostname($jsonData->host->name);
+
+                $up_hostname = $host->getHostname();
+
+                $query->bindParam(':name', $up_hostname, PDO::PARAM_STR);
+            }
+
+            if ($version_updated === true) {
+                $host->setVersion($jsonData->host->version);
+
+                $up_version = $host->getVersion();
+
+                $query->bindParam(':version', $up_version, PDO::PARAM_STR);
+            }
+
+            if ($mac_updated === true) {
+                $host->setMac($jsonData->host->mac);
+
+                $up_mac = $task->getMac();
+
+                $query->bindParam(':mac', $up_mac, PDO::PARAM_STR);
+            }
+
+            if ($localip_updated === true) {
+                $host->setLocalIp($jsonData->host->local_ip);
+
+                $up_localip = $host->getLocalIp();
+
+                $query->bindParam(':local_ip', $up_localip, PDO::PARAM_STR);
+            }
+
+            if ($gatewayip_updated === true) {
+                $host->setGatewayIp($jsonData->host->gateway_ip);
+
+                $up_gatewayip = $host->getGatewayIp();
+
+                $query->bindParam(':gateway_ip', $up_gatewayip, PDO::PARAM_STR);
+            }
+
+            $query->bindParam(':hostid', $hostId, PDO::PARAM_INT);
+            // $query->bindParam(':userid', $returned_userid, PDO::PARAM_INT);
+            $query->execute();
+
+            $rowCount = $query->rowCount();
+
+            if ($rowCount === 0) {
+                $response = new Response(false, 400, 'Host not updated - given values may be the same as the stored values.');
+                $response->send();
+                exit;
+            }
+
+            $query = $writeDB->prepare('SELECT id, name, version, mac, INET_NTOA(local_ip) AS local_ip, INET_NTOA(gateway_ip) AS gateway_ip FROM tbl_hosts WHERE id = :hostid');
+            $query->bindParam(':hostid', $hostId, PDO::PARAM_INT);
+            $query->execute();
+
+            $rowCount = $query->rowCount();
+
+            if ($rowCount === 0) {
+                $response = new Response(false, 404, 'No host found.');
+                $response->send();
+                exit;
+            }
+
+            $hostArray = array();
+
+            while ($row = $query->fetch(PDO::FETCH_ASSOC)) {
+                $host = new Host($row['id'], $row['name'], $row['version'], $row['gateway_ip'], $row['local_ip'], $row['mac']);
+
+                $hostArray[] = $host->returnAsArray();
+            }
+
+            $returnData = array();
+            $returnData['rows_returned'] = $rowCount;
+            $returnData['hosts'] = $hostArray;
+
+            $response = new Response(true, 200, 'Host updated.', $returnData);
+            $response->send();
+            exit();
+        } catch (HostException $ex) {
+            $response = new Response(false, 400, $ex->getMessage());
+            $response->send();
+            exit();
+        } catch (PDOException $ex) {
+            error_log('Database Query Error: ' . $ex, 0);
+            $response = new Response(false, 500, 'Failed to update task - check your data for errors.');
+            $response->send();
+            exit();
+        }
     } else {
         $response = new Response(false, 405, 'Request method is not allowed!', null, false);
         $response->send();
@@ -92,7 +258,7 @@ if (array_key_exists('hostId', $_GET)) {
                 // set up response for unsuccessful request
                 $response = new Response(false, 400, 'Content Type header not set to JSON!', null, false);
                 $response->send();
-                exit;
+                exit();
             }
 
             // get POST request body as the POSTed data will be JSON format
@@ -102,15 +268,13 @@ if (array_key_exists('hostId', $_GET)) {
                 // set up response for unsuccessful request
                 $response = new Response(false, 400, 'Request body is not valid JSON.!', null, false);
                 $response->send();
-                exit;
+                exit();
             }
 
-            // check if post request contains mandatory fields
+            // Check if post request contains mandatory fields
             if (!isset($jsonData['host']['name']) || !isset($jsonData['host']['version']) || !isset($jsonData['host']['local ip']) || !isset($jsonData['host']['gateway ip']) || !isset($jsonData['host']['mac'])) {
 
                 $response = new Response(false, 400, null, null, false);
-
-                // (!isset($jsonData['host']['id']) ? $response->addMessage('Host ID field is mandatory and must be provided.') : false);
 
                 (!isset($jsonData['host']['name']) ? $response->addMessage('Host name field is mandatory and must be provided.') : false);
 
@@ -121,8 +285,6 @@ if (array_key_exists('hostId', $_GET)) {
                 (!isset($jsonData['host']['gateway ip']) ? $response->addMessage('Gateway IP field is mandatory and must be provided.') : false);
 
                 (!isset($jsonData['host']['mac']) ? $response->addMessage('Mac Address field is mandatory and must be provided.') : false);
-
-                /**/
 
                 $response->send();
                 exit;
@@ -205,6 +367,10 @@ if (array_key_exists('hostId', $_GET)) {
             $response->send();
             exit();
         }
+    } else {
+        $response = new Response(false, 405, 'Request method is not allowed!', null, false);
+        $response->send();
+        exit;
     }
 } else {
     # code...

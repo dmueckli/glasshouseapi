@@ -93,7 +93,13 @@ if (array_key_exists('weatherDataId', $_GET)) {
             exit();
         }
     } elseif ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
+        $response = new Response(false, 501, 'Request method is not implemented!', null, false);
+        $response->send();
+        exit;
     } elseif ($_SERVER['REQUEST_METHOD'] === 'PATCH') {
+        $response = new Response(false, 501, 'Request method is not implemented!', null, false);
+        $response->send();
+        exit;
     } else {
         $response = new Response(false, 405, 'Request method is not allowed!', null, false);
         $response->send();
@@ -122,31 +128,31 @@ if (array_key_exists('weatherDataId', $_GET)) {
             }
 
             // check if post request contains mandatory fields
-            if (!isset($jsonData['sensor data']['humidity']) || !isset($jsonData['sensor data']['soil moisture']) || !isset($jsonData['sensor data']['temperature °C']) || !isset($jsonData['sensor data']['heat index °C'])) {
+            if (!isset($jsonData['sensor_data']['humidity']) || !isset($jsonData['sensor_data']['soil_moisture']) || !isset($jsonData['sensor_data']['temperature_°C']) || !isset($jsonData['sensor_data']['heat_index_°C'])) {
 
                 $response = new Response(false, 400, null, null, false);
 
-                /* WILL BE SET DURING AUTHORIZATION!!!
+                /** WILL BE SET DURING AUTHORIZATION!!!
                 // (!isset($jsonData['host']['id']) ? $response->addMessage('Host ID field is mandatory and must be provided.') : false);
 
                 // (!isset($jsonData['host']['name']) ? $response->addMessage('Host name field is mandatory and must be provided.') : false);
 
                 // (!isset($jsonData['host']['version']) ? $response->addMessage('Version field is mandatory and must be provided.') : false);
 
-                // (!isset($jsonData['host']['local ip']) ? $response->addMessage('Local IP field is mandatory and must be provided.') : false);
+                // (!isset($jsonData['host']['local_ip']) ? $response->addMessage('Local_IP field is mandatory and must be provided.') : false);
 
-                (!isset($jsonData['host']['gateway ip']) ? $response->addMessage('Gateway IP field is mandatory and must be provided.') : false);
+                (!isset($jsonData['host']['gateway_ip']) ? $response->addMessage('Gateway_IP field is mandatory and must be provided.') : false);
 
                 // (!isset($jsonData['host']['mac']) ? $response->addMessage('Mac Address field is mandatory and must be provided.') : false);
                 */
 
-                (!isset($jsonData['sensor data']['humidity']) ? $response->addMessage('Humidity  field is mandatory and must be provided.') : false);
+                (!isset($jsonData['sensor_data']['humidity']) ? $response->addMessage('Humidity field is mandatory and must be provided.') : false);
 
-                (!isset($jsonData['sensor data']['soil moisture']) ? $response->addMessage('Soil moisture field is mandatory and must be provided.') : false);
+                (!isset($jsonData['sensor_data']['soil_moisture']) ? $response->addMessage('Soil moisture field is mandatory and must be provided.') : false);
 
-                (!isset($jsonData['sensor data']['temperature °C']) ? $response->addMessage('Temperature field is mandatory and must be provided.') : false);
+                (!isset($jsonData['sensor_data']['temperature_°C']) ? $response->addMessage('Temperature field is mandatory and must be provided.') : false);
 
-                (!isset($jsonData['sensor data']['heat index °C']) ? $response->addMessage('Heat index field is mandatory and must be provided.') : false);
+                (!isset($jsonData['sensor_data']['heat_index_°C']) ? $response->addMessage('Heat index field is mandatory and must be provided.') : false);
 
                 $response->send();
                 exit;
@@ -155,14 +161,14 @@ if (array_key_exists('weatherDataId', $_GET)) {
             // create new task with data, if non mandatory fields not provided then set to null
             // $weatherdata = array();
 
-            $weather = new WeatherData(null, $jsonData['sensor data']['humidity'], $jsonData['sensor data']['soil moisture'], $jsonData['sensor data']['temperature °C'], $jsonData['sensor data']['heat index °C'], null);
+            $weather = new WeatherData(null, $jsonData['sensor_data']['humidity'], $jsonData['sensor_data']['soil_moisture'], $jsonData['sensor_data']['temperature_°C'], $jsonData['sensor_data']['heat_index_°C'], null);
 
             $humidity = $weather->getHumidity();
             $soilMoisture = $weather->getSoilMoisture();
             $tempCelsius = $weather->getTemperature();
             $heatIndex = $weather->getHeatIndex();
 
-            $host = new Host($jsonData['host']['id'], $jsonData['host']['name'], $jsonData['host']['version'], $jsonData['host']['mac'], $jsonData['host']['local ip'], $jsonData['host']['gateway ip']);
+            $host = new Host($jsonData['host']['id'], $jsonData['host']['name'], $jsonData['host']['version'], $jsonData['host']['mac'], $jsonData['host']['local_ip'], $jsonData['host']['gateway_ip']);
 
             $hostId = $host->getID();
             $hostname = $host->getHostname();
@@ -246,8 +252,7 @@ if (array_key_exists('weatherDataId', $_GET)) {
             exit();
         }
     } else {
-        # code...
-        $response = new Response(false, 405, 'Not allowed!', null, false);
+        $response = new Response(false, 405, 'Request method is not allowed!', null, false);
         $response->send();
         exit;
     }
