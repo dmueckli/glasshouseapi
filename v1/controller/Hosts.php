@@ -89,7 +89,7 @@ if (array_key_exists('hostId', $_GET)) {
         try {
             //code...
             // $query = $readDB->prepare('SELECT id, name, humidity, soil_moisture, temperature, heat_index, time FROM tbl_host, tbl_hosts WHERE tbl_host.id = :id AND tbl_hosts = host_id');
-            $query = $readDB->prepare('SELECT tbl_hosts.id AS hostid, tbl_hosts.name, tbl_hosts.version, tbl_hosts.mac, INET_NTOA(tbl_hosts.local_ip) AS local_ip, INET_NTOA(tbl_hosts.gateway_ip) AS gateway_ip FROM tbl_hosts WHERE tbl_hosts.id = :id');
+            $query = $readDB->prepare('SELECT tbl_hosts.id AS hostid, tbl_hosts.name, tbl_versions.name as version, tbl_hosts.mac, INET_NTOA(tbl_hosts.local_ip) AS local_ip, INET_NTOA(tbl_hosts.gateway_ip) AS gateway_ip FROM tbl_hosts INNER JOIN tbl_versions ON tbl_hosts.versionid = tbl_versions.id WHERE tbl_hosts.id = :id');
             $query->bindParam(':id', $hostId, PDO::PARAM_INT);
             $query->execute();
 
@@ -236,7 +236,7 @@ if (array_key_exists('hostId', $_GET)) {
                 exit();
             }
 
-            $query = $writeDB->prepare('SELECT id, name, versionid, mac, INET_NTOA(local_ip) AS local_ip, INET_NTOA(gateway_ip) AS gateway_ip FROM tbl_hosts WHERE id = :hostid');
+            $query = $writeDB->prepare('SELECT id, name, versionid, INET_NTOA(gateway_ip) AS gateway_ip, INET_NTOA(local_ip) AS local_ip, mac FROM tbl_hosts WHERE id = :hostid');
             $query->bindParam(':hostid', $hostId, PDO::PARAM_INT);
             $query->execute();
 
@@ -272,12 +272,12 @@ if (array_key_exists('hostId', $_GET)) {
                 $query->bindParam(':versionid', $up_version, PDO::PARAM_STR);
             }
 
-            if ($mac_updated === true) {
-                $host->setMac($jsonData->host->mac);
+            if ($gatewayip_updated === true) {
+                $host->setGatewayIp($jsonData->host->gateway_ip);
 
-                $up_mac = $task->getMac();
+                $up_gatewayip = $host->getGatewayIp();
 
-                $query->bindParam(':mac', $up_mac, PDO::PARAM_STR);
+                $query->bindParam(':gateway_ip', $up_gatewayip, PDO::PARAM_STR);
             }
 
             if ($localip_updated === true) {
@@ -288,12 +288,12 @@ if (array_key_exists('hostId', $_GET)) {
                 $query->bindParam(':local_ip', $up_localip, PDO::PARAM_STR);
             }
 
-            if ($gatewayip_updated === true) {
-                $host->setGatewayIp($jsonData->host->gateway_ip);
+            if ($mac_updated === true) {
+                $host->setMac($jsonData->host->mac);
 
-                $up_gatewayip = $host->getGatewayIp();
+                $up_mac = $host->getMac();
 
-                $query->bindParam(':gateway_ip', $up_gatewayip, PDO::PARAM_STR);
+                $query->bindParam(':mac', $up_mac, PDO::PARAM_STR);
             }
 
             $query->bindParam(':hostid', $hostId, PDO::PARAM_INT);
@@ -308,7 +308,7 @@ if (array_key_exists('hostId', $_GET)) {
                 exit;
             }
 
-            $query = $writeDB->prepare('SELECT tbl_hosts.id AS hostid, tbl_hosts.name, tbl_versions.name as version, tbl_hosts.mac, INET_NTOA(tbl_hosts.local_ip) AS local_ip, INET_NTOA(tbl_hosts.gateway_ip) AS gateway_ip FROM tbl_hosts INNER JOIN tbl_versions ON tbl_hosts.versionid = tbl_versions.id WHERE tbl_hosts.id = :hostid');
+            $query = $writeDB->prepare('SELECT tbl_hosts.id AS hostid, tbl_hosts.name, tbl_versions.name as version, INET_NTOA(tbl_hosts.gateway_ip) AS gateway_ip, INET_NTOA(tbl_hosts.local_ip) AS local_ip, tbl_hosts.mac FROM tbl_hosts INNER JOIN tbl_versions ON tbl_hosts.versionid = tbl_versions.id WHERE tbl_hosts.id = :hostid');
             $query->bindParam(':hostid', $hostId, PDO::PARAM_INT);
             $query->execute();
 

@@ -330,6 +330,7 @@ if (array_key_exists('sessionid', $_GET)) {
 
         $returnData = array();
 
+        $returnData['host_id'] = $returned_hostid;
         $returnData['session_id'] = intval($lastSessionId);
         $returnData['accesstoken'] = $accesstoken;
         $returnData['accesstoken_expires_in'] = $accesstoken_expriry_seconds;
