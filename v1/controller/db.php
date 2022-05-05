@@ -1,5 +1,8 @@
 <?php
 
+require_once('constants.php');
+global $db_host;
+
 class DB
 {
     private static $writeDBConnection;
@@ -9,7 +12,7 @@ class DB
     {
         
         if (self::$writeDBConnection === null) {
-            self::$writeDBConnection = new PDO('mysql:host=localhost;dbname=glasshousedb;charset=utf8', 'glasshouseapi', 'qrbaKpxR9TLpAc9V');
+            self::$writeDBConnection = new PDO('mysql:host='. $GLOBALS['db_host'] .';dbname='. $GLOBALS['db_name'] .';charset='.$GLOBALS['db_charset'], $GLOBALS['db_user'], $GLOBALS['db_password']);
             self::$writeDBConnection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             self::$writeDBConnection->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
         }
@@ -20,7 +23,7 @@ class DB
     public static function connectReadDB()
     {
         if (self::$readDBConnection === null) {
-            self::$readDBConnection = new PDO('mysql:host=localhost;dbname=glasshousedb;charset=utf8', 'glasshouseapi', 'qrbaKpxR9TLpAc9V');
+            self::$readDBConnection = new PDO('mysql:host='. $GLOBALS['db_host'] .';dbname='. $GLOBALS['db_name'] .';charset='.$GLOBALS['db_charset'], $GLOBALS['db_user'], $GLOBALS['db_password']);
             self::$readDBConnection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             self::$readDBConnection->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
         }

@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * This class creates an http response.
+ */
 class Response
 {
     private $_success;
@@ -9,11 +12,14 @@ class Response
     private $_toCache = false;
     private $_responseData = array();
 
-    public function __construct($success, $httpStatusCode, $message, $data, $toCache)
+
+    public function __construct($success, $httpStatusCode, $message = null, $data = null, $toCache = false)
     {
         $this->setSuccess($success);
         $this->setHttpStatusCode($httpStatusCode);
-        $this->addMessage($message);
+        if ($message !== null) {
+            $this->addMessage($message);
+        }        
         $this->setData($data);
         $this->toCache($toCache);
     }

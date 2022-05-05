@@ -143,9 +143,9 @@ class WeatherData
         $weatherData['id'] = $this->getID();
         //$weatherData['hostname'] = $this->getHostname();
         $weatherData['humidity'] = $this->getHumidity();
-        $weatherData['soil moisture'] = $this->getSoilMoisture();
+        $weatherData['soil_moisture'] = $this->getSoilMoisture();
         $weatherData['temperature'] = $this->getTemperature();
-        $weatherData['heat index'] = $this->getHeatIndex();
+        $weatherData['heat_index'] = $this->getHeatIndex();
         $weatherData['time'] = $this->getTime();
         return $weatherData;
     }
