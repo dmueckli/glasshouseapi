@@ -130,6 +130,9 @@ if (array_key_exists('hostId', $_GET)) {
         $response->send();
         exit;
     } elseif ($_SERVER['REQUEST_METHOD'] === 'PATCH') {
+        // $response = new Response(false, 501, 'Request method is not implemented!', null, false);
+        // $response->send();
+        // exit;
         try {
 
             if ($_SERVER['CONTENT_TYPE'] !== 'application/json') {
@@ -162,13 +165,17 @@ if (array_key_exists('hostId', $_GET)) {
             }
 
             if (isset($jsonData->host->version)) {
+                // TODO: Implement check if the given version exists 
+                // TODO: Implement function to insert new version if none exists
+
+
                 $version_updated = true;
-                $queryFields .= 'version = :version, ';
+                $queryFields .= 'versionid = :versionid, ';
             }
 
-            if (isset($jsonData->host->mac)) {
-                $mac_updated = true;
-                $queryFields .= 'mac = :mac, ';
+            if (isset($jsonData->host->gateway_ip)) {
+                $gatewayip_updated = true;
+                $queryFields .= 'gateway_ip = INET_ATON(:gateway_ip), ';
             }
 
             if (isset($jsonData->host->local_ip)) {
@@ -176,9 +183,9 @@ if (array_key_exists('hostId', $_GET)) {
                 $queryFields .= 'local_ip = INET_ATON(:local_ip), ';
             }
 
-            if (isset($jsonData->host->gateway_ip)) {
-                $gatewayip_updated = true;
-                $queryFields .= 'gateway_ip = INET_ATON(:gateway_ip), ';
+            if (isset($jsonData->host->mac)) {
+                $mac_updated = true;
+                $queryFields .= 'mac = :mac, ';
             }
 
             // This strips the last comma from the end of the queryFields string.
@@ -190,7 +197,7 @@ if (array_key_exists('hostId', $_GET)) {
                 exit();
             }
 
-            $query = $writeDB->prepare('SELECT id, name, version, mac, INET_NTOA(local_ip) AS local_ip, INET_NTOA(gateway_ip) AS gateway_ip FROM tbl_hosts WHERE id = :hostid');
+            $query = $writeDB->prepare('SELECT id, name, versionid, mac, INET_NTOA(local_ip) AS local_ip, INET_NTOA(gateway_ip) AS gateway_ip FROM tbl_hosts WHERE id = :hostid');
             $query->bindParam(':hostid', $hostId, PDO::PARAM_INT);
             $query->execute();
 
@@ -203,7 +210,7 @@ if (array_key_exists('hostId', $_GET)) {
             }
 
             while ($row = $query->fetch(PDO::FETCH_ASSOC)) {
-                $host = new Host($row['id'], $row['name'], $row['version'], $row['gateway_ip'], $row['local_ip'], $row['mac']);
+                $host = new Host($row['id'], $row['name'], $row['versionid'], $row['gateway_ip'], $row['local_ip'], $row['mac']);
             }
 
             $queryString = 'UPDATE tbl_hosts SET ' . $queryFields . ' WHERE id = :hostid';
@@ -262,7 +269,7 @@ if (array_key_exists('hostId', $_GET)) {
                 exit;
             }
 
-            $query = $writeDB->prepare('SELECT id, name, version, mac, INET_NTOA(local_ip) AS local_ip, INET_NTOA(gateway_ip) AS gateway_ip FROM tbl_hosts WHERE id = :hostid');
+            $query = $writeDB->prepare('SELECT tbl_hosts.id AS hostid, tbl_hosts.name, tbl_versions.name as version, tbl_hosts.mac, INET_NTOA(tbl_hosts.local_ip) AS local_ip, INET_NTOA(tbl_hosts.gateway_ip) AS gateway_ip FROM tbl_hosts INNER JOIN tbl_versions ON tbl_hosts.versionid = tbl_versions.id WHERE tbl_hosts.id = :hostid');
             $query->bindParam(':hostid', $hostId, PDO::PARAM_INT);
             $query->execute();
 
@@ -295,7 +302,7 @@ if (array_key_exists('hostId', $_GET)) {
             exit();
         } catch (PDOException $ex) {
             error_log('Database Query Error: ' . $ex, 0);
-            $response = new Response(false, 500, 'Failed to update task - check your data for errors.');
+            $response = new Response(false, 500, 'Failed to update Host - check your data for errors.');
             $response->send();
             exit();
         }
@@ -331,7 +338,7 @@ if (array_key_exists('hostId', $_GET)) {
             }
 
             // Check if post request contains mandatory fields
-            if (!isset($jsonData['host']['name']) || !isset($jsonData['host']['version']) || !isset($jsonData['host']['local ip']) || !isset($jsonData['host']['gateway ip']) || !isset($jsonData['host']['mac'])) {
+            if (!isset($jsonData['host']['name']) || !isset($jsonData['host']['version']) || !isset($jsonData['host']['local_ip']) || !isset($jsonData['host']['gateway_ip']) || !isset($jsonData['host']['mac'])) {
 
                 $response = new Response(false, 400, null, null, false);
 
@@ -339,9 +346,9 @@ if (array_key_exists('hostId', $_GET)) {
 
                 (!isset($jsonData['host']['version']) ? $response->addMessage('Version field is mandatory and must be provided.') : false);
 
-                (!isset($jsonData['host']['local ip']) ? $response->addMessage('Local IP field is mandatory and must be provided.') : false);
+                (!isset($jsonData['host']['local_ip']) ? $response->addMessage('Local IP field is mandatory and must be provided.') : false);
 
-                (!isset($jsonData['host']['gateway ip']) ? $response->addMessage('Gateway IP field is mandatory and must be provided.') : false);
+                (!isset($jsonData['host']['gateway_ip']) ? $response->addMessage('Gateway IP field is mandatory and must be provided.') : false);
 
                 (!isset($jsonData['host']['mac']) ? $response->addMessage('Mac Address field is mandatory and must be provided.') : false);
 
@@ -352,7 +359,7 @@ if (array_key_exists('hostId', $_GET)) {
             // create new array with data, if non mandatory fields not provided then set to null
             // $host = array();
 
-            $host = new Host(null, $jsonData['host']['name'], $jsonData['host']['version'], $jsonData['host']['gateway ip'], $jsonData['host']['local ip'], $jsonData['host']['mac']);
+            $host = new Host(null, $jsonData['host']['name'], $jsonData['host']['version'], $jsonData['host']['gateway_ip'], $jsonData['host']['local_ip'], $jsonData['host']['mac']);
 
             // $hostId = $host->getID();
             $hostname = $host->getHostname();
@@ -361,16 +368,51 @@ if (array_key_exists('hostId', $_GET)) {
             $localIp = $host->getLocalIp();
             $mac = $host->getMac();
 
-            // create db query
-            // $query = $writeDB->prepare('INSERT INTO tbltasks (title, description, deadline, completed, userid) VALUES (:title, :description, STR_TO_DATE(:deadline, "%d/%m/%Y %H:%i"), :completed, :userid)');
+            // Check if the given version exists 
+            // and insert new version if none
+            $query = $writeDB->prepare('SELECT id, name, description, active FROM tbl_versions WHERE name = :version');
+            $query->bindParam(':version', $version, PDO::PARAM_STR);
+            $query->execute();
 
-            // $query = $writeDB->prepare('INSERT INTO tbl_hosts (id, name, version, mac, INET_ATON(tbl_hosts.local_ip) AS local_ip, INET_ATON(tbl_hosts.gateway_ip) AS gateway_ip) VALUES (NULL, :name, :version, :mac, :localip, :gatewayip)');
+            // get row count
+            $rowCount = $query->rowCount();
 
-            $query = $writeDB->prepare('INSERT INTO tbl_hosts (id, name, version, mac, local_ip, gateway_ip) VALUES (NULL, :name, :version, :mac, INET_ATON(:localip), INET_ATON(:gatewayip))');
+            if ($rowCount === 0) {
+                $query = $writeDB->prepare('INSERT INTO tbl_versions (id, name) VALUES (NULL, :version)');
+                $query->bindParam(':version', $version, PDO::PARAM_STR);
+                $query->execute();
+
+                $lastVersionId = $writeDB->lastInsertId();
+
+                $query = $writeDB->prepare('SELECT id, name, description, active FROM tbl_versions WHERE id = :version');
+                $query->bindParam(':version', $lastVersionId, PDO::PARAM_STR);
+                $query->execute();
+
+                // get row count
+                $rowCount = $query->rowCount();
+            }
+
+            if ($rowCount === 0) {
+                # code...
+                $response = new Response(false, 500, 'Failed to create version!', null, false);
+                $response->send();
+                exit;
+            }
+
+            $row = $query->fetch(PDO::FETCH_ASSOC); // Get version details from database 
+
+            $returned_versionId = $row['id'];
+            $returned_versionName = $row['name'];
+            $returned_versionDescription = $row['description'];
+            $returned_versionActive = $row['active'];
+            // END OF VERSION CHECK SCRIPTS
+
+
+            $query = $writeDB->prepare('INSERT INTO tbl_hosts (id, name, versionid, mac, local_ip, gateway_ip) VALUES (NULL, :name, :versionid, :mac, INET_ATON(:localip), INET_ATON(:gatewayip))');
 
             // $query->bindParam(':hostId', $hostId, PDO::PARAM_INT);
             $query->bindParam(':name', $hostname, PDO::PARAM_STR);
-            $query->bindParam(':version', $version, PDO::PARAM_INT);
+            $query->bindParam(':versionid', $returned_versionId, PDO::PARAM_INT);
             $query->bindParam(':gatewayip', $gatewayIp, PDO::PARAM_STR);
             $query->bindParam(':localip', $localIp, PDO::PARAM_STR);
             $query->bindParam(':mac', $mac, PDO::PARAM_STR);
@@ -389,14 +431,15 @@ if (array_key_exists('hostId', $_GET)) {
             // get last task id so we can return the Task in the json
             $lastId = $writeDB->lastInsertId();
 
-            $query = $readDB->prepare('SELECT tbl_hosts.id AS hostid, tbl_hosts.name, tbl_hosts.version, tbl_hosts.mac, INET_NTOA(tbl_hosts.local_ip) AS local_ip, INET_NTOA(tbl_hosts.gateway_ip) AS gateway_ip FROM tbl_hosts WHERE tbl_hosts.id = :id');
+            // Getting the last host from the database
+            $query = $readDB->prepare('SELECT tbl_hosts.id AS hostid, tbl_hosts.name, tbl_versions.name as version, tbl_hosts.mac, INET_NTOA(tbl_hosts.local_ip) AS local_ip, INET_NTOA(tbl_hosts.gateway_ip) AS gateway_ip FROM tbl_hosts INNER JOIN tbl_versions ON tbl_hosts.versionid = tbl_versions.id WHERE tbl_hosts.id = :id');
             $query->bindParam(':id', $lastId, PDO::PARAM_INT);
             $query->execute();
 
             // get row count
             $rowCount = $query->rowCount();
 
-            // make sure that the new task was returned
+            // make sure that the new host was returned
             if ($rowCount === 0) {
                 // set up response for unsuccessful return
                 $response = new Response(false, 500, "Failed to retrieve host from database after creation.", null, false);
@@ -422,7 +465,7 @@ if (array_key_exists('hostId', $_GET)) {
             exit();
         } catch (PDOException $ex) {
             //throw $th;
-            $response = new Response(false, 500, 'Failed to insert task into database - please check the submitted data.', null, false);
+            $response = new Response(false, 500, 'Failed to insert host into database - please check the submitted data.', null, false);
             $response->send();
             exit();
         }
