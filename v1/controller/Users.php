@@ -14,7 +14,70 @@ try { // Setup database connection
     exit();
 }
 
+//Begin of the authorization script
+
+// Check for authorization header 
+if (!isset($_SERVER['HTTP_AUTHORIZATION']) || strlen($_SERVER['HTTP_AUTHORIZATION']) < 1) {
+    $response = new Response(false, 401);
+    (!isset($_SERVER['HTTP_AUTHORIZATION']) ? $response->addMessage('Access token is missing from the header.') : false);
+    (strlen($_SERVER['HTTP_AUTHORIZATION']) < 1 ? $response->addMessage('Access token cannot be blank.') : false);
+    $response->send();
+    exit();
+}
+
+try { // Try to get user credentials from db using the given accesstoken
+    $accessToken = $_SERVER['HTTP_AUTHORIZATION'];
+
+    $query = $writeDB->prepare('SELECT userid, accesstokenexpiry, active, login_attempts, type, hostid FROM tbl_sessions, tbl_users WHERE tbl_sessions.userid = tbl_users.id AND accesstoken = :accesstoken');
+    $query->bindParam(':accesstoken', $accessToken, PDO::PARAM_STR);
+    $query->execute();
+
+    $rowCount = $query->rowCount();
+
+    if ($rowCount === 0) { // Error response if theres no session with this access token
+        $response = new Response(false, 401, 'Invalid access token.');
+        $response->send();
+        exit();
+    }
+
+    $row = $query->fetch(PDO::FETCH_ASSOC); // Get user credentials from database 
+
+    $returned_userid = $row['userid'];
+    $returned_accesstokenexpiry = $row['accesstokenexpiry'];
+    $returned_useractive = $row['active'];
+    $returned_loginattempts = $row['login_attempts'];
+    $returned_type = $row['type'];
+    $returned_hostid = $row['hostid'];
+
+    if ($returned_useractive !== 'Y') {
+        $response = new Response(false, 401, 'User account is not active.');
+        $response->send();
+        exit();
+    }
+
+    if ($returned_loginattempts >= 3) {
+        $response = new Response(false, 401, 'User account is currently locked out.');
+        $response->send();
+        exit();
+    }
+
+    if (strtotime($returned_accesstokenexpiry) < time()) {
+        $response = new Response(false, 401, 'Access token has been expired.');
+        $response->send();
+        exit();
+    }
+} catch (PDOException $ex) {
+    error_log('Database Query Error: ' . $ex, 0);
+    $response = new Response(false, 500, 'There was an issue authenticating - please try again.');
+    $response->send();
+    exit();
+} // End of the authorization script
+
 if (array_key_exists('id', $_GET)) {
+    $response = new Response(false, 405, 'Request method is not allowed!', null, false);
+    $response->send();
+    exit;
+
     $userId = $_GET['id'];
 
     if ($userId == '' || !is_numeric($userId)) {
@@ -44,7 +107,7 @@ if (array_key_exists('id', $_GET)) {
             }
 
             // Check if mandatory fields (username, password) are supplied
-            if ( !isset($jsonData->username) || !isset($jsonData->password)) {
+            if (!isset($jsonData->username) || !isset($jsonData->password)) {
                 $response = new Response(false, 400);
 
                 (!isset($jsonData->username) ? $response->addMessage('Username not supplied.') : false);
@@ -73,7 +136,7 @@ if (array_key_exists('id', $_GET)) {
                 if (strlen($jsonData->password) < 8 || strlen($jsonData->password) > 255 || !preg_match('@[A-Z]@', $jsonData->password) || !preg_match('@[a-z]@', $jsonData->password) || !preg_match('@[0-9]@', $jsonData->password) || !preg_match('@[^\w]@', $jsonData->password)) {
                     $response->addMessage('Password should be at least 8 characters in length and should include at least one upper case letter, one number, and one special character.');
                 };
-    
+
 
                 $response->send();
                 exit();

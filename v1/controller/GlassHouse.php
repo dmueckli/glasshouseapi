@@ -17,20 +17,64 @@ try {
     exit();
 }
 
-/*  TODO: Implement authorization script
-    Begin of the authorization script
+//Begin of the authorization script
 
 // Check for authorization header 
 if (!isset($_SERVER['HTTP_AUTHORIZATION']) || strlen($_SERVER['HTTP_AUTHORIZATION']) < 1) {
-    $response = new Response();
-    $response->setHttpStatusCode(401);
-    $response->setSuccess(false);
+    $response = new Response(false, 401);
     (!isset($_SERVER['HTTP_AUTHORIZATION']) ? $response->addMessage('Access token is missing from the header.') : false);
     (strlen($_SERVER['HTTP_AUTHORIZATION']) < 1 ? $response->addMessage('Access token cannot be blank.') : false);
     $response->send();
     exit();
 }
- */
+
+try { // Try to get user credentials from db using the given accesstoken
+    $accessToken = $_SERVER['HTTP_AUTHORIZATION'];
+
+    $query = $writeDB->prepare('SELECT userid, accesstokenexpiry, active, login_attempts, type, hostid FROM tbl_sessions, tbl_users WHERE tbl_sessions.userid = tbl_users.id AND accesstoken = :accesstoken');
+    $query->bindParam(':accesstoken', $accessToken, PDO::PARAM_STR);
+    $query->execute();
+
+    $rowCount = $query->rowCount();
+
+    if ($rowCount === 0) { // Error response if theres no session with this access token
+        $response = new Response(false, 401, 'Invalid access token.');
+        $response->send();
+        exit();
+    }
+
+    $row = $query->fetch(PDO::FETCH_ASSOC); // Get user credentials from database 
+
+    $returned_userid = $row['userid'];
+    $returned_accesstokenexpiry = $row['accesstokenexpiry'];
+    $returned_useractive = $row['active'];
+    $returned_loginattempts = $row['login_attempts'];
+    $returned_type = $row['type'];
+    $returned_hostid = $row['hostid'];
+
+    if ($returned_useractive !== 'Y') {
+        $response = new Response(false, 401, 'User account is not active.');
+        $response->send();
+        exit();
+    }
+
+    if ($returned_loginattempts >= 3) {
+        $response = new Response(false, 401, 'User account is currently locked out.');
+        $response->send();
+        exit();
+    }
+
+    if (strtotime($returned_accesstokenexpiry) < time()) {
+        $response = new Response(false, 401, 'Access token has been expired.');
+        $response->send();
+        exit();
+    }
+} catch (PDOException $ex) {
+    error_log('Database Query Error: ' . $ex, 0);
+    $response = new Response(false, 500, 'There was an issue authenticating - please try again.');
+    $response->send();
+    exit();
+} // End of the authorization script
 
 if (array_key_exists('weatherDataId', $_GET)) {
     $weatherDataId = $_GET['weatherDataId'];
@@ -45,8 +89,8 @@ if (array_key_exists('weatherDataId', $_GET)) {
 
         try {
             //code...
-            // $query = $readDB->prepare('SELECT id, name, humidity, soil_moisture, temperature, heat_index, time FROM tbl_weatherdata, tbl_hosts WHERE tbl_weatherdata.id = :id AND tbl_hosts = host_id');
-            $query = $readDB->prepare('SELECT tbl_weatherdata.id, tbl_hosts.id AS hostid, tbl_hosts.name, tbl_hosts.version, tbl_hosts.mac, INET_NTOA(tbl_hosts.local_ip) AS local_ip, INET_NTOA(tbl_hosts.gateway_ip) AS gateway_ip, tbl_weatherdata.humidity, tbl_weatherdata.soil_moisture, tbl_weatherdata.temperature, tbl_weatherdata.heat_index, tbl_weatherdata.time FROM tbl_weatherdata INNER JOIN tbl_hosts ON tbl_weatherdata.host_id = tbl_hosts.id WHERE tbl_weatherdata.id = :id');
+            // $query = $readDB->prepare('SELECT id, name, humidity, soil_moisture, temperature, heat_index, time FROM 	tbl_sensordata, tbl_hosts WHERE 	tbl_sensordata.id = :id AND tbl_hosts = host_id');
+            $query = $readDB->prepare('SELECT 	tbl_sensordata.id, tbl_hosts.id AS hostid, tbl_hosts.name, tbl_hosts.version, tbl_hosts.mac, INET_NTOA(tbl_hosts.local_ip) AS local_ip, INET_NTOA(tbl_hosts.gateway_ip) AS gateway_ip, 	tbl_sensordata.humidity, 	tbl_sensordata.soil_moisture, 	tbl_sensordata.temperature, 	tbl_sensordata.heat_index, 	tbl_sensordata.time FROM 	tbl_sensordata INNER JOIN tbl_hosts ON 	tbl_sensordata.host_id = tbl_hosts.id WHERE 	tbl_sensordata.id = :id');
             $query->bindParam(':id', $weatherDataId, PDO::PARAM_INT);
             $query->execute();
 
@@ -128,7 +172,7 @@ if (array_key_exists('weatherDataId', $_GET)) {
             }
 
             // check if post request contains mandatory fields
-            if (!isset($jsonData['sensor_data']['humidity']) || !isset($jsonData['sensor_data']['soil_moisture']) || !isset($jsonData['sensor_data']['temperature_°C']) || !isset($jsonData['sensor_data']['heat_index_°C'])) {
+            if (!isset($jsonData['sensor_data']['humidity']) || !isset($jsonData['sensor_data']['soil_moisture']) || !isset($jsonData['sensor_data']['temperature']) || !isset($jsonData['sensor_data']['heat_index'])) {
 
                 $response = new Response(false, 400, null, null, false);
 
@@ -144,15 +188,15 @@ if (array_key_exists('weatherDataId', $_GET)) {
                 (!isset($jsonData['host']['gateway_ip']) ? $response->addMessage('Gateway_IP field is mandatory and must be provided.') : false);
 
                 // (!isset($jsonData['host']['mac']) ? $response->addMessage('Mac Address field is mandatory and must be provided.') : false);
-                */
+                 */
 
                 (!isset($jsonData['sensor_data']['humidity']) ? $response->addMessage('Humidity field is mandatory and must be provided.') : false);
 
                 (!isset($jsonData['sensor_data']['soil_moisture']) ? $response->addMessage('Soil moisture field is mandatory and must be provided.') : false);
 
-                (!isset($jsonData['sensor_data']['temperature_°C']) ? $response->addMessage('Temperature field is mandatory and must be provided.') : false);
+                (!isset($jsonData['sensor_data']['temperature']) ? $response->addMessage('Temperature field is mandatory and must be provided.') : false);
 
-                (!isset($jsonData['sensor_data']['heat_index_°C']) ? $response->addMessage('Heat index field is mandatory and must be provided.') : false);
+                (!isset($jsonData['sensor_data']['heat_index']) ? $response->addMessage('Heat index field is mandatory and must be provided.') : false);
 
                 $response->send();
                 exit;
@@ -161,32 +205,35 @@ if (array_key_exists('weatherDataId', $_GET)) {
             // create new task with data, if non mandatory fields not provided then set to null
             // $weatherdata = array();
 
-            $weather = new WeatherData(null, $jsonData['sensor_data']['humidity'], $jsonData['sensor_data']['soil_moisture'], $jsonData['sensor_data']['temperature_°C'], $jsonData['sensor_data']['heat_index_°C'], null);
+            $weather = new WeatherData(null, $jsonData['sensor_data']['humidity'], $jsonData['sensor_data']['soil_moisture'], $jsonData['sensor_data']['temperature'], $jsonData['sensor_data']['heat_index'], null);
 
             $humidity = $weather->getHumidity();
             $soilMoisture = $weather->getSoilMoisture();
             $tempCelsius = $weather->getTemperature();
             $heatIndex = $weather->getHeatIndex();
 
-            $host = new Host($jsonData['host']['id'], $jsonData['host']['name'], $jsonData['host']['version'], $jsonData['host']['mac'], $jsonData['host']['local_ip'], $jsonData['host']['gateway_ip']);
+            // $host = new Host($jsonData['host']['id'], $jsonData['host']['name'], $jsonData['host']['version'], $jsonData['host']['mac'], $jsonData['host']['local_ip'], $jsonData['host']['gateway_ip']);
+            // $host = new Host($jsonData['host']['id'], $jsonData['host']['name'], $jsonData['host']['version'], $jsonData['host']['mac'], $jsonData['host']['local_ip'], $jsonData['host']['gateway_ip']);
 
-            $hostId = $host->getID();
-            $hostname = $host->getHostname();
-            $version = $host->getVersion();
-            $mac = $host->getMac();
-            $localIp = $host->getLocalIp();
-            $gatewayIp = $host->getGatewayIp();
+            // $hostId = $host->getID();
+            // $hostname = $host->getHostname();
+            // $version = $host->getVersion();
+            // $mac = $host->getMac();
+            // $localIp = $host->getLocalIp();
+            // $gatewayIp = $host->getGatewayIp();
 
             // create db query
             // $query = $writeDB->prepare('INSERT INTO tbltasks (title, description, deadline, completed, userid) VALUES (:title, :description, STR_TO_DATE(:deadline, "%d/%m/%Y %H:%i"), :completed, :userid)');
 
-            $query = $writeDB->prepare('INSERT INTO tbl_weatherdata (id, host_id, humidity, soil_moisture, temperature, heat_index, time) VALUES (NULL, :hostId, :humidity, :soil_moisture, :temperature, :heatIndex, now())');
+            // $query = $writeDB->prepare('INSERT INTO tbl_sensordata (id, host_id, user_id, humidity, soil_moisture, temperature, heat_index, time) VALUES (NULL, :hostId, :userId, :humidity, :soil_moisture, :temperature, :heatIndex, now())');
+            $query = $writeDB->prepare('INSERT INTO tbl_sensordata (id, host_id, user_id, humidity, soil_moisture, temperature, heat_index, time) VALUES (NULL, :hostId, :userId, :humidity, :soil_moisture, :temperature, :heatIndex, now())');
 
-            $query->bindParam(':hostId', $hostId, PDO::PARAM_INT);
+            $query->bindParam(':hostId', $returned_hostid, PDO::PARAM_INT);
+            $query->bindParam(':userId', $returned_userid, PDO::PARAM_INT);
             $query->bindParam(':humidity', $humidity, PDO::PARAM_STR);
-            $query->bindParam(':soil_moisture', $soilMoisture, PDO::PARAM_INT);
+            $query->bindParam(':soil_moisture', $soilMoisture, PDO::PARAM_STR);
             $query->bindParam(':temperature', $tempCelsius, PDO::PARAM_STR);
-            $query->bindParam(':heatIndex', $heatIndex, PDO::PARAM_INT);
+            $query->bindParam(':heatIndex', $heatIndex, PDO::PARAM_STR);
             $query->execute();
 
             // get row count
@@ -194,7 +241,7 @@ if (array_key_exists('weatherDataId', $_GET)) {
 
             if ($rowCount === 0) {
                 // set up response for unsuccessful return
-                $response = new Response(false, 500, "Failed to create task.", null, false);
+                $response = new Response(false, 500, "Failed to create sensor data.", null, false);
                 $response->send();
                 exit;
             }
@@ -202,7 +249,7 @@ if (array_key_exists('weatherDataId', $_GET)) {
             // get last task id so we can return the Task in the json
             $lastId = $writeDB->lastInsertId();
 
-            $query = $readDB->prepare('SELECT tbl_weatherdata.id, tbl_hosts.id AS hostid, tbl_hosts.name, tbl_hosts.version, tbl_hosts.mac, INET_NTOA(tbl_hosts.local_ip) AS local_ip, INET_NTOA(tbl_hosts.gateway_ip) AS gateway_ip, tbl_weatherdata.humidity, tbl_weatherdata.soil_moisture, tbl_weatherdata.temperature, tbl_weatherdata.heat_index, tbl_weatherdata.time FROM tbl_weatherdata INNER JOIN tbl_hosts ON tbl_weatherdata.host_id = tbl_hosts.id WHERE tbl_weatherdata.id = :id');
+            $query = $readDB->prepare('SELECT tbl_sensordata.id, tbl_hosts.id AS hostid, tbl_hosts.name as hostname, tbl_versions.name as version, tbl_hosts.mac, INET_NTOA(tbl_hosts.local_ip) AS local_ip, INET_NTOA(tbl_hosts.gateway_ip) AS gateway_ip, tbl_sensordata.humidity, tbl_sensordata.soil_moisture, tbl_sensordata.temperature, tbl_sensordata.heat_index, tbl_sensordata.time FROM tbl_sensordata INNER JOIN tbl_hosts ON tbl_sensordata.host_id = tbl_hosts.id INNER JOIN tbl_versions ON tbl_hosts.versionid = tbl_versions.id WHERE tbl_sensordata.id = :id');
             $query->bindParam(':id', $lastId, PDO::PARAM_INT);
             $query->execute();
 
@@ -212,29 +259,31 @@ if (array_key_exists('weatherDataId', $_GET)) {
             // make sure that the new task was returned
             if ($rowCount === 0) {
                 // set up response for unsuccessful return
-                $response = new Response(false, 500, "Failed to retrieve task from database after creation.", null, false);
+                $response = new Response(false, 500, "Failed to retrieve sensor data from database after creation.", null, false);
                 $response->send();
                 exit;
             }
 
+            $weatherdata = array();
+
             while ($row = $query->fetch(PDO::FETCH_ASSOC)) {
                 # code...
-                $weatherdata = array();
 
                 $weather = new WeatherData($row['id'], $row['humidity'], $row['soil_moisture'], $row['temperature'], $row['heat_index'], $row['time']);
 
-                $host = new Host($row['hostid'], $row['name'], $row['version'], $row['mac'], $row['local_ip'], $row['gateway_ip']);
+                $host = new Host($row['hostid'], $row['hostname'], $row['version'], $row['gateway_ip'], $row['local_ip'], $row['mac']);
 
-                $weatherData['host'] = $host->returnAsArray();
-                $weatherData['weather'] = $weather->returnAsArray();
+                $hostarray = $host->returnAsArray();
+                $sensorData = $weather->returnAsArray();
 
-                $weatherDataArray[] = $weatherData;
+                $weatherDataArray[] = $sensorData;
             }
 
             // bundle tasks and rows returned into an array to return in the json data
             $returnData = array();
             $returnData['rows_returned'] = $rowCount;
-            $returnData['weatherData'] = $weatherDataArray;
+            $returnData['host'] = $hostarray;
+            $returnData['sensorData'] = $weatherDataArray;
 
             //set up response for successful return
             $response = new Response(true, 200, 'Query OK! Data created. weatherDataId: ' . $lastId, $returnData, true);
@@ -247,7 +296,7 @@ if (array_key_exists('weatherDataId', $_GET)) {
             exit();
         } catch (PDOException $ex) {
             //throw $th;
-            $response = new Response(false, 500, 'Failed to insert task into database - please check the submitted data.', null, false);
+            $response = new Response(false, 500, 'Failed to insert sensordata into database - please check the submitted data.', null, false);
             $response->send();
             exit();
         }
