@@ -167,7 +167,46 @@ if (array_key_exists('hostId', $_GET)) {
             if (isset($jsonData->host->version)) {
                 // TODO: Implement check if the given version exists 
                 // TODO: Implement function to insert new version if none exists
+                // Check if the given version exists 
+                // and insert new version if none
+                $version = $jsonData->host->version;
 
+                $query = $writeDB->prepare('SELECT id, name, description, active FROM tbl_versions WHERE name = :version');
+                $query->bindParam(':version', $version, PDO::PARAM_STR);
+                $query->execute();
+
+                // get row count
+                $rowCount = $query->rowCount();
+
+                if ($rowCount === 0) {
+                    $query = $writeDB->prepare('INSERT INTO tbl_versions (id, name) VALUES (NULL, :version)');
+                    $query->bindParam(':version', $version, PDO::PARAM_STR);
+                    $query->execute();
+
+                    $lastVersionId = $writeDB->lastInsertId();
+
+                    $query = $writeDB->prepare('SELECT id, name, description, active FROM tbl_versions WHERE id = :version');
+                    $query->bindParam(':version', $lastVersionId, PDO::PARAM_STR);
+                    $query->execute();
+
+                    // get row count
+                    $rowCount = $query->rowCount();
+                }
+
+                if ($rowCount === 0) {
+                    # code...
+                    $response = new Response(false, 500, 'Failed to create version!', null, false);
+                    $response->send();
+                    exit;
+                }
+
+                $row = $query->fetch(PDO::FETCH_ASSOC); // Get version details from database 
+
+                $returned_versionId = $row['id'];
+                $returned_versionName = $row['name'];
+                $returned_versionDescription = $row['description'];
+                $returned_versionActive = $row['active'];
+                // END OF VERSION CHECK SCRIPTS
 
                 $version_updated = true;
                 $queryFields .= 'versionid = :versionid, ';
@@ -210,7 +249,7 @@ if (array_key_exists('hostId', $_GET)) {
             }
 
             while ($row = $query->fetch(PDO::FETCH_ASSOC)) {
-                $host = new Host($row['id'], $row['name'], $row['versionid'], $row['gateway_ip'], $row['local_ip'], $row['mac']);
+                $host = new Host($row['id'], $row['name'], $row['version'], $row['gateway_ip'], $row['local_ip'], $row['mac']);
             }
 
             $queryString = 'UPDATE tbl_hosts SET ' . $queryFields . ' WHERE id = :hostid';
@@ -226,11 +265,11 @@ if (array_key_exists('hostId', $_GET)) {
             }
 
             if ($version_updated === true) {
-                $host->setVersion($jsonData->host->version);
+                $host->setVersion($returned_versionId);
 
                 $up_version = $host->getVersion();
 
-                $query->bindParam(':version', $up_version, PDO::PARAM_STR);
+                $query->bindParam(':versionid', $up_version, PDO::PARAM_STR);
             }
 
             if ($mac_updated === true) {
@@ -284,7 +323,7 @@ if (array_key_exists('hostId', $_GET)) {
             $hostArray = array();
 
             while ($row = $query->fetch(PDO::FETCH_ASSOC)) {
-                $host = new Host($row['id'], $row['name'], $row['version'], $row['gateway_ip'], $row['local_ip'], $row['mac']);
+                $host = new Host($row['hostid'], $row['name'], $row['version'], $row['gateway_ip'], $row['local_ip'], $row['mac']);
 
                 $hostArray[] = $host->returnAsArray();
             }
