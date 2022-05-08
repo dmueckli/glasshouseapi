@@ -90,7 +90,7 @@ if (array_key_exists('id', $_GET)) {
         try {
             //code...
             // $query = $readDB->prepare('SELECT id, name, humidity, soil_moisture, temperature, heat_index, time FROM 	tbl_sensordata, tbl_hosts WHERE 	tbl_sensordata.id = :id AND tbl_hosts = host_id');
-            $query = $readDB->prepare('SELECT 	tbl_sensordata.id, tbl_hosts.id AS hostid, tbl_hosts.name, tbl_hosts.version, tbl_hosts.mac, INET_NTOA(tbl_hosts.local_ip) AS local_ip, INET_NTOA(tbl_hosts.gateway_ip) AS gateway_ip, 	tbl_sensordata.humidity, 	tbl_sensordata.soil_moisture, 	tbl_sensordata.temperature, 	tbl_sensordata.heat_index, 	tbl_sensordata.time FROM 	tbl_sensordata INNER JOIN tbl_hosts ON 	tbl_sensordata.host_id = tbl_hosts.id WHERE 	tbl_sensordata.id = :id');
+            $query = $readDB->prepare('SELECT tbl_sensordata.id, tbl_hosts.id AS hostid, tbl_hosts.name as hostname, tbl_versions.name as version, tbl_hosts.mac, INET_NTOA(tbl_hosts.local_ip) AS local_ip, INET_NTOA(tbl_hosts.gateway_ip) AS gateway_ip, tbl_sensordata.humidity, tbl_sensordata.soil_moisture, tbl_sensordata.temperature, tbl_sensordata.heat_index, tbl_sensordata.time FROM tbl_sensordata INNER JOIN tbl_hosts ON tbl_sensordata.host_id = tbl_hosts.id INNER JOIN tbl_versions ON tbl_hosts.versionid = tbl_versions.id WHERE tbl_sensordata.id = :id');
             $query->bindParam(':id', $sensorDataId, PDO::PARAM_INT);
             $query->execute();
 
