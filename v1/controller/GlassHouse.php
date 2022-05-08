@@ -76,10 +76,10 @@ try { // Try to get user credentials from db using the given accesstoken
     exit();
 } // End of the authorization script
 
-if (array_key_exists('weatherDataId', $_GET)) {
-    $weatherDataId = $_GET['weatherDataId'];
+if (array_key_exists('id', $_GET)) {
+    $sensorDataId = $_GET['id'];
 
-    if ($weatherDataId == '' || !is_numeric($weatherDataId)) {
+    if ($sensorDataId == '' || !is_numeric($sensorDataId)) {
         $response = new Response(false, 400, 'WeatherData ID cannot be blank or must be numeric.', null, false);
         $response->send();
         exit;
@@ -91,7 +91,7 @@ if (array_key_exists('weatherDataId', $_GET)) {
             //code...
             // $query = $readDB->prepare('SELECT id, name, humidity, soil_moisture, temperature, heat_index, time FROM 	tbl_sensordata, tbl_hosts WHERE 	tbl_sensordata.id = :id AND tbl_hosts = host_id');
             $query = $readDB->prepare('SELECT 	tbl_sensordata.id, tbl_hosts.id AS hostid, tbl_hosts.name, tbl_hosts.version, tbl_hosts.mac, INET_NTOA(tbl_hosts.local_ip) AS local_ip, INET_NTOA(tbl_hosts.gateway_ip) AS gateway_ip, 	tbl_sensordata.humidity, 	tbl_sensordata.soil_moisture, 	tbl_sensordata.temperature, 	tbl_sensordata.heat_index, 	tbl_sensordata.time FROM 	tbl_sensordata INNER JOIN tbl_hosts ON 	tbl_sensordata.host_id = tbl_hosts.id WHERE 	tbl_sensordata.id = :id');
-            $query->bindParam(':id', $weatherDataId, PDO::PARAM_INT);
+            $query->bindParam(':id', $sensorDataId, PDO::PARAM_INT);
             $query->execute();
 
             $rowCount = $query->rowCount();
@@ -258,7 +258,7 @@ if (array_key_exists('weatherDataId', $_GET)) {
             $returnData['sensor_data'] = $weatherDataArray;
 
             //set up response for successful return
-            $response = new Response(true, 200, 'Query OK! Data created. weatherDataId: ' . $lastId, $returnData, true);
+            $response = new Response(true, 200, 'Query OK! Data created. sensorDataId: ' . $lastId, $returnData, true);
             $response->send();
             exit;
         } catch (WeatherDataException $wx) {
