@@ -176,20 +176,6 @@ if (array_key_exists('weatherDataId', $_GET)) {
 
                 $response = new Response(false, 400, null, null, false);
 
-                /** WILL BE SET DURING AUTHORIZATION!!!
-                // (!isset($jsonData['host']['id']) ? $response->addMessage('Host ID field is mandatory and must be provided.') : false);
-
-                // (!isset($jsonData['host']['name']) ? $response->addMessage('Host name field is mandatory and must be provided.') : false);
-
-                // (!isset($jsonData['host']['version']) ? $response->addMessage('Version field is mandatory and must be provided.') : false);
-
-                // (!isset($jsonData['host']['local_ip']) ? $response->addMessage('Local_IP field is mandatory and must be provided.') : false);
-
-                (!isset($jsonData['host']['gateway_ip']) ? $response->addMessage('Gateway_IP field is mandatory and must be provided.') : false);
-
-                // (!isset($jsonData['host']['mac']) ? $response->addMessage('Mac Address field is mandatory and must be provided.') : false);
-                 */
-
                 (!isset($jsonData['sensor_data']['humidity']) ? $response->addMessage('Humidity field is mandatory and must be provided.') : false);
 
                 (!isset($jsonData['sensor_data']['soil_moisture']) ? $response->addMessage('Soil moisture field is mandatory and must be provided.') : false);
@@ -212,20 +198,6 @@ if (array_key_exists('weatherDataId', $_GET)) {
             $tempCelsius = $weather->getTemperature();
             $heatIndex = $weather->getHeatIndex();
 
-            // $host = new Host($jsonData['host']['id'], $jsonData['host']['name'], $jsonData['host']['version'], $jsonData['host']['mac'], $jsonData['host']['local_ip'], $jsonData['host']['gateway_ip']);
-            // $host = new Host($jsonData['host']['id'], $jsonData['host']['name'], $jsonData['host']['version'], $jsonData['host']['mac'], $jsonData['host']['local_ip'], $jsonData['host']['gateway_ip']);
-
-            // $hostId = $host->getID();
-            // $hostname = $host->getHostname();
-            // $version = $host->getVersion();
-            // $mac = $host->getMac();
-            // $localIp = $host->getLocalIp();
-            // $gatewayIp = $host->getGatewayIp();
-
-            // create db query
-            // $query = $writeDB->prepare('INSERT INTO tbltasks (title, description, deadline, completed, userid) VALUES (:title, :description, STR_TO_DATE(:deadline, "%d/%m/%Y %H:%i"), :completed, :userid)');
-
-            // $query = $writeDB->prepare('INSERT INTO tbl_sensordata (id, host_id, user_id, humidity, soil_moisture, temperature, heat_index, time) VALUES (NULL, :hostId, :userId, :humidity, :soil_moisture, :temperature, :heatIndex, now())');
             $query = $writeDB->prepare('INSERT INTO tbl_sensordata (id, host_id, user_id, humidity, soil_moisture, temperature, heat_index, time) VALUES (NULL, :hostId, :userId, :humidity, :soil_moisture, :temperature, :heatIndex, now())');
 
             $query->bindParam(':hostId', $returned_hostid, PDO::PARAM_INT);
@@ -282,8 +254,8 @@ if (array_key_exists('weatherDataId', $_GET)) {
             // bundle tasks and rows returned into an array to return in the json data
             $returnData = array();
             $returnData['rows_returned'] = $rowCount;
-            $returnData['host'] = $hostarray;
-            $returnData['sensorData'] = $weatherDataArray;
+            // $returnData['host'] = $hostarray;
+            $returnData['sensor_data'] = $weatherDataArray;
 
             //set up response for successful return
             $response = new Response(true, 200, 'Query OK! Data created. weatherDataId: ' . $lastId, $returnData, true);
