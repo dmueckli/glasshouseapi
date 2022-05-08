@@ -109,7 +109,7 @@ if (array_key_exists('id', $_GET)) {
 
                 $weather = new WeatherData($row['id'], $row['humidity'], $row['soil_moisture'], $row['temperature'], $row['heat_index'], $row['time']);
 
-                $host = new Host($row['hostid'], $row['name'], $row['version'], $row['mac'], $row['local_ip'], $row['gateway_ip']);
+                $host = new Host($row['hostid'], $row['hostname'], $row['version'], $row['mac'], $row['local_ip'], $row['gateway_ip']);
 
                 $weatherData['host'] = $host->returnAsArray();
                 $weatherData['weather'] = $weather->returnAsArray();
